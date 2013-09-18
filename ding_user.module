@@ -243,7 +243,9 @@ function ding_user_form_user_profile_form_alter(&$form, &$form_state) {
  * @see user_account_form_validate()
  */
 function ding_user_account_form_validate($form, &$form_state) {
-
+  if (empty($mail)) {
+    return TRUE;
+  }
   // Test whether the e-mail address should be disguised.
   if ($mail = ding_user_is_shared_email($form, $form_state)) {
     $form_state['values']['mail'] = 'dingusermail_'. $mail;
