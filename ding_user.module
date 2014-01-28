@@ -686,7 +686,8 @@ function ding_user_get_creds($account = NULL) {
     session_destroy();
     $GLOBALS['user'] = drupal_anonymous_user();
     drupal_set_message(t('Your session has timed out.'));
-    drupal_goto();
+    $destination = drupal_get_destination();
+    drupal_goto($destination['destination']);
   }
 
   throw new DingProviderAuthException;
