@@ -617,7 +617,8 @@ function ajax_command_ding_user_authenticate($extra_data) {
     'ajaxify' => TRUE,
   );
   $form = drupal_build_form($form_id, $form_state);
-
+  $form["name"]["#type"] = "password";
+  $form["name"]["#theme"] = "password";
   $login_form = drupal_render($form);
   return ajax_command_ding_popup('ding_user', $title, $login_form, array('resubmit' => TRUE, 'extra_data' => $extra_data));
 }

@@ -33,7 +33,7 @@ function ding_user_authenticate_form($form, &$form_state) {
   }
 
   // Display login form:
-  $form['name'] = array('#type' => 'textfield',
+  $form['name'] = array('#type' => 'password',
     '#title' => t('Username'),
     '#size' => 60,
     '#maxlength' => USERNAME_MAX_LENGTH,
