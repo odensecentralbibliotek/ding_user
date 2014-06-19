@@ -28,5 +28,5 @@ projects[ding_entity][download][branch] = "development"
 projects[profile2][version] = "1.2"
 projects[profile2][subdir] = contrib
 
-projects[entity][version] = "1.0-rc3"
+projects[entity][version] = "1.5"
 projects[entity][subdir] = contrib
