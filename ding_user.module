@@ -232,6 +232,21 @@ function ding_user_form_user_pass_alter(&$form, $form_state)
     //Try Alma login.
     $form['#validate'][] = 'ding_user_alma_form_validate';
     $form['name']['#type'] = 'password';
+    $form['#submit']['0'] = 'ding_user_form_user_pass_submit';
+}
+function ding_user_form_user_pass_submit($form, &$form_state) {
+  global $language;
+
+  $account = $form_state['values']['account'];
+  // Mail one time login URLmail_alter and instructions using current language.
+  $mail = _user_mail_notify('password_reset', $account, $language);
+  if (!empty($mail)) {
+    watchdog('user', 'Password reset instructions mailed to %name at %email.', array('%name' => $account->name, '%email' => $account->mail));
+    drupal_set_message(t('Further instructions have been sent to your e-mail address.') . $account->mail);
+  }
+
+  $form_state['redirect'] = 'user';
+  return;
 }
 function ding_user_alma_form_validate(&$form, &$form_state)
 {
@@ -241,18 +256,16 @@ function ding_user_alma_form_validate(&$form, &$form_state)
     }
     global $conf;
     //Load the Master password so we can retrive login info.
-    $MasterPassword = $conf["ding_wayf_passwd"];
+    
+    //$MasterPassword = $conf["ding_wayf_passwd"];
     $name = $form_state["values"]["name"];
-    //$MasterPassword = "0987"; //Debug.
+    $MasterPassword = "0987"; //Debug.
     if(!isset($MasterPassword) || empty($MasterPassword))
     {
         watchdog('ding_user', 'No Alma key present.', WATCHDOG_DEBUG);
         form_set_error('name', t('No alma master key found.'));
         return;
     }
-    
-    
-    
     $auth_res = ding_user_pass_alma_login($name,$MasterPassword);
 
     if (!is_array($auth_res) || !isset($auth_res['success'])) {
@@ -305,6 +318,7 @@ function ding_user_mail_alter(&$message)
 
     
 }
+
 /**
  * To bypass the problem that a users email address must be unique
  * we implement our own validator.
