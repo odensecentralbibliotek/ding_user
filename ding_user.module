@@ -243,11 +243,12 @@ function ding_user_alma_form_validate(&$form, &$form_state)
     //Load the Master password so we can retrive login info.
     $MasterPassword = $conf["ding_wayf_password"];
     $name = $form_state["values"]["name"];
-    $MasterPassword = "0987"; //Debug.
+    //$MasterPassword = "0987"; //Debug.
     if(!isset($MasterPassword) || empty($MasterPassword))
     {
         watchdog('ding_user', 'No Alma key present.', WATCHDOG_DEBUG);
         form_set_error('name', t('No alma master key found.'));
+        return;
     }
     
     
