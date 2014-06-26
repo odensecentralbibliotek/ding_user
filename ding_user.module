@@ -233,7 +233,7 @@ function ding_user_form_user_pass_alter(&$form, $form_state)
     
     $form['#validate'][] = 'ding_user_alma_form_validate';
     $form['name']['#type'] = 'password';
-    $form['name']['#title'] = t('Enter Username');
+    
 }
 function ding_user_alma_form_validate(&$form, &$form_state)
 {
@@ -246,7 +246,7 @@ function ding_user_alma_form_validate(&$form, &$form_state)
     $MasterPassword = $conf["ding_wayf_password"];
     $name = $form_state["values"]["name"];
     
-    //$MasterPassword = "0987"; //Debug.
+    $MasterPassword = "0987"; //Debug.
     
     
     $auth_res = ding_user_pass_alma_login($name,$MasterPassword);
