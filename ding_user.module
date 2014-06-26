@@ -241,7 +241,7 @@ function ding_user_alma_form_validate(&$form, &$form_state)
     }
     global $conf;
     //Load the Master password so we can retrive login info.
-    $MasterPassword = $conf["ding_wayf_password"];
+    $MasterPassword = $conf["ding_wayf_passwd"];
     $name = $form_state["values"]["name"];
     //$MasterPassword = "0987"; //Debug.
     if(!isset($MasterPassword) || empty($MasterPassword))
