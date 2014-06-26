@@ -222,7 +222,82 @@ function ding_user_form_user_profile_form_alter(&$form, &$form_state) {
     }
   }
 }
+/**
+ * hook_form_user_pass_alter
+ * Adds Alma login validator for when using cpr numbers as username.
+ */
 
+function ding_user_form_user_pass_alter(&$form, $form_state)
+{
+    //Try Alma login.
+    $form['#validate'][] = 'ding_user_alma_form_validate';
+}
+function ding_user_alma_form_validate(&$form, &$form_state)
+{
+    if(isset($form_state["values"]["account"]))
+    {
+        return;
+    }
+    global $conf;
+    //Load the Master password so we can retrive login info.
+    $MasterPassword = $conf["ding_wayf_password"];
+    $name = $form_state["values"]["name"];
+    
+    //$MasterPassword = "0987"; //Debug.
+    
+    
+    $auth_res = ding_user_pass_alma_login($name,$MasterPassword);
+
+    if (!is_array($auth_res) || !isset($auth_res['success'])) {
+        watchdog('ding_user', 'Provider returned invalid result: @res', array('@res' => print_r($auth_res, TRUE)), WATCHDOG_DEBUG);
+        form_set_error('name', t('Sorry, %name is not recognized as a user name or an e-mail address.', array('%name' => $name)));
+        return;
+    }        
+    $users = user_load_multiple(array(), array('mail' => $auth_res["user"]["mail"], 'status' => '1'));
+    $account = reset($users);
+    if (isset($account->uid)) {
+        form_clear_error(); //Clear previous set stop errors, and Remove the text from showing.
+        if(isset($_SESSION['messages']['error']))
+        {
+            unset($_SESSION['messages']['error']);
+        }
+         //Clear any errors that might have been set. Everything validatet correctly now.
+        form_set_value(array('#parents' => array('account')), $account, $form_state);
+    }
+    else {
+      form_set_error('name', t('Sorry, %name is not recognized as a user name or an e-mail address.', array('%name' => $name)));
+    }
+}
+function ding_user_pass_alma_login($Username,$Password)
+{
+    try
+    {
+       $auth_res = ding_provider_invoke('user', 'authenticate', $Username ,  $Password );
+       $users = user_load_multiple(array(), array('mail' => $auth_res["user"]["mail"], 'status' => '1'));
+       $account = reset($users);
+       //Important: Save the creds here! else nothing will work :)
+       ding_user_save_creds($auth_res,$account);
+       return $auth_res;
+    } catch (Exception $ex)
+    {
+        return null;
+    }
+}
+function ding_user_mail_alter(&$message)
+{
+    $replacements = array();
+    if (isset($message["body"][0])) {
+        $users = user_load_multiple(array(), array('mail' => $message["to"], 'status' => '1'));
+       $account = reset($users);
+        $replacements['[user:profile-provider-alma:user:one-time-login-url]'] = user_pass_reset_url($account);
+            foreach($replacements as $key => $token)
+            {
+                $message["body"][0] = str_replace($key, $token, $message["body"][0]);
+            }
+    }
+
+    
+}
 /**
  * To bypass the problem that a users email address must be unique
  * we implement our own validator.
