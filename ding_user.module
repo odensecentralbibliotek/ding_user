@@ -267,14 +267,78 @@ function ding_user_alma_form_validate(&$form, &$form_state)
         return;
     }
     $auth_res = ding_user_pass_alma_login($name,$MasterPassword);
-
+    /*
+     * Users might not always have an email account connected to their user. althou this should
+     * be the normal case , we cant assume it.
+     */
     if (!is_array($auth_res) || !isset($auth_res['success'])) {
         watchdog('ding_user', 'Provider returned invalid result: @res', array('@res' => print_r($auth_res, TRUE)), WATCHDOG_DEBUG);
         form_set_error('name', t('Sorry, %name is not recognized as a user name or an e-mail address.', array('%name' => $name)));
         return;
-    }        
+    }
+    
     $users = user_load_multiple(array(), array('mail' => $auth_res["user"]["mail"], 'status' => '1'));
     $account = reset($users);
+    if($account == FALSE)
+    {
+        //User had never been logged in. Import from alma into CMS and then send key.
+        $auth_name = null;
+        if (isset($auth_res['authname']) && !empty($auth_res['authname'])) {
+        // If provider supplied an authname, use it.
+            $auth_name = $auth_res['authname'];
+          }
+          else {
+            // Else use a standard authname.
+            $auth_name = ding_user_default_authname($form_state['values']['name']);
+          }
+        // Register this new user.
+        $userinfo = array(
+          // Name is only 60 chars, and authname is longer. Use a shorter SHAE1
+          // hash.
+          'name' => hash('sha1', $auth_name),
+          'pass' => user_password(),
+          'init' => $auth_name,
+          'status' => 1,
+          'access' => REQUEST_TIME,
+          'mail' => !empty($auth_res["user"]["mail"]) ? $auth_res["user"]["mail"] : '',
+        );
+        
+        if (isset($auth_res['user'])) {
+          $userinfo = array_merge($userinfo, $auth_res['user']);
+        }
+        $account = user_save(drupal_anonymous_user(), $userinfo);
+        // Terminate if an error occurred during user_save().
+        if (!$account) {
+          drupal_set_message(t("Error saving user account."), 'error');
+          return;
+        }
+        user_set_authmaps($account, array("authname_ding_user" => $auth_name));
+        ding_user_save_creds($auth_res, $account);
+        //Setup the profile 2 aswell.
+        $profile = ding_user_provider_profile($account);
+        if (!$profile) {
+          $provider = _ding_provider_get_provider('user');
+          $provider_profile_type = 'provider_' . $provider['module'];
+          // Check that we have a profile type for this provider.
+          if (!$profile_type = profile2_type_load($provider_profile_type)) {
+            // Create new type, if provider haven't.
+            $profile_type = ding_user_create_profile_type($provider);
+          }
+          // Create a profile for current user.
+          $profile = new Profile(
+            array(
+              'user' => $account,
+              'type' => $profile_type,
+            )
+          );
+          // Bind this profile to the user.
+          $profile->save();
+        }
+        // Let provider initialise the profile. Assume they save it if need be.
+        if (ding_provider_implements('user', 'profile_init')) {
+          ding_provider_invoke('user', 'profile_init', $profile, $auth_res);
+        }
+    }
     if (isset($account->uid)) {
         form_clear_error(); //Clear previous set stop errors, and Remove the text from showing.
         if(isset($_SESSION['messages']['error']))
@@ -605,6 +669,7 @@ function ding_user_user_login_validate($form, &$form_state) {
 
       $account = user_external_load($auth_name);
       if (!$account) {
+          
         // Register this new user.
         $userinfo = array(
           // Name is only 60 chars, and authname is longer. Use a shorter SHAE1
@@ -622,6 +687,7 @@ function ding_user_user_login_validate($form, &$form_state) {
         }
 
         $account = user_save(drupal_anonymous_user(), $userinfo);
+        
         // Terminate if an error occurred during user_save().
         if (!$account) {
           drupal_set_message(t("Error saving user account."), 'error');
