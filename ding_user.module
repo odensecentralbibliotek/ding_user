@@ -979,3 +979,13 @@ class DingUserCredentialsCache extends DrupalDatabaseCache {
     return $cache;
   }
 }
+
+/**
+* Helper function to get the pin-code length from the administration UI.
+*
+* @return int
+* The length of the pin-code, if not set it will return 4.
+*/
+function ding_user_get_pincode_length() {
+return 4;
+}
