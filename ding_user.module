@@ -250,20 +250,45 @@ function ding_user_form_user_pass_submit($form, &$form_state) {
 }
 function ding_user_alma_form_validate(&$form, &$form_state)
 {
-    if(isset($form_state["values"]["account"]))
-    {
-        return;
-    }
     global $conf;
-    //Load the Master password so we can retrive login info.
-    
+    $name = null;
     $MasterPassword = $conf["ding_wayf_passwd"];
-    $name = $form_state["values"]["name"];
-    //$MasterPassword = "0987"; //Debug.
+    $ServicePassword = $conf["MobilPro_Service_Password"];
+    
     if(!isset($MasterPassword) || empty($MasterPassword))
     {
         watchdog('ding_user', 'No Alma key present.', WATCHDOG_DEBUG);
         form_set_error('name', t('No alma master key found.'));
+        return;
+    }
+    
+    if(isset($form_state["values"]["account"]))
+    {
+        //User is using his email...
+        $EmailLookupService = $conf["MobilPro_Service_Url"];
+        if(!isset($form_state["values"]["account"]->mail))
+        {
+          form_set_error('name', t('Sorry, %name is not recognized as a user name or an e-mail address.', array('%name' => $name)));
+          return;          
+        }
+        $EmailLookupService = $EmailLookupService ."?summapassword=".$ServicePassword."&email=".$form_state["values"]["account"]->mail."&sms=";
+        $result = file_get_contents($EmailLookupService);        
+        $doc = new DOMDocument();
+        $doc->loadXML($result);
+        $elem = $doc->getElementsByTagName('tickno');
+        if(isset($elem->item(0)->nodeValue))
+        {
+            $name = $elem->item(0)->nodeValue;
+        }
+    }
+    else
+    {
+        //User is recovering using his cpr number.
+        $name = $form_state["values"]["name"];
+    }
+    if($name == null)
+    {        
+        form_set_error('name', t('Sorry, %name is not recognized as a user name or an e-mail address.', array('%name' => $name)));
         return;
     }
     $auth_res = ding_user_pass_alma_login($name,$MasterPassword);
@@ -823,7 +848,7 @@ function ding_user_authenticate_form_callback($form, &$form_state) {
  * @param $account The user to get creds for.
  */
 function ding_user_get_creds($account = NULL) {
-  if (!$account) {
+  if (!$account ) {
     $account = $GLOBALS['user'];
   }
   if ($cache = cache_get(session_name() . '-' . $account->uid, 'cache_ding_user_credentials')) {
@@ -839,20 +864,20 @@ function ding_user_get_creds($account = NULL) {
       return $cache->data;
     }
   }
-
   $roles = array_values($GLOBALS['user']->roles);
-  /*
-  // Log out user who are authenticated but has no other roles (i.e. ding user)
-  if (user_is_logged_in() && sizeof($roles) == 1 && $roles[0] == 'authenticated user') {
-    watchdog('user', 'Session timeout for %name.', array('%name' => $account->name));
-    user_module_invoke('logout', $account, 'user');
-    session_destroy();
-    $GLOBALS['user'] = drupal_anonymous_user();
-    drupal_set_message(t('Your session has timed out.'));
-    $destination = drupal_get_destination();
-    drupal_goto($destination['destination']);
-  }
-    */
+      // Log out user who are authenticated but has no other roles (i.e. ding user)
+    if (user_is_logged_in() && sizeof($roles) == 1 && $roles[0] == 'authenticated user' ) {
+      watchdog('user', 'Session timeout for %name.', array('%name' => $account->name));
+      user_module_invoke('logout', $account, 'user');
+      session_destroy();
+      $GLOBALS['user'] = drupal_anonymous_user();
+      drupal_set_message(t('Your session has timed out.'));
+      $destination = drupal_get_destination();
+      drupal_goto($destination['destination']);
+    }
+
+  
+    
   throw new DingProviderAuthException;
 }
 
