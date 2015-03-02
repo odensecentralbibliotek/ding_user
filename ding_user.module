@@ -268,6 +268,7 @@ function ding_user_alma_form_validate(&$form, &$form_state)
     
     if(isset($form_state["values"]["account"]))
     {
+        watchdog(WATCHDOG_DEBUG, "Attemping to reset users pass based on email.");
         //User is using his email...
         $EmailLookupService = $conf["MobilPro_Service_Url"];
         if(!isset($EmailLookupService))
@@ -293,6 +294,7 @@ function ding_user_alma_form_validate(&$form, &$form_state)
     else
     {
         //User is recovering using his cpr number.
+        watchdog(WATCHDOG_DEBUG, "Attemping to reset users pass based on CPR.");
         $name = $form_state["values"]["name"];
     }
     if($name == null)
