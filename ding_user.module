@@ -254,7 +254,11 @@ function ding_user_alma_form_validate(&$form, &$form_state)
     $name = null;
     $MasterPassword = $conf["ding_wayf_passwd"];
     $ServicePassword = $conf["MobilPro_Service_Password"];
-    
+    if(!isset($ServicePassword))
+    {
+        form_set_error('name', t('Service Password Not Found'));
+        return;
+    }
     if(!isset($MasterPassword) || empty($MasterPassword))
     {
         watchdog('ding_user', 'No Alma key present.', WATCHDOG_DEBUG);
@@ -266,6 +270,11 @@ function ding_user_alma_form_validate(&$form, &$form_state)
     {
         //User is using his email...
         $EmailLookupService = $conf["MobilPro_Service_Url"];
+        if(!isset($EmailLookupService))
+        {
+            form_set_error('name', t('Could not locate service url.'));
+            return;
+        }
         if(!isset($form_state["values"]["account"]->mail))
         {
           form_set_error('name', t('Sorry, %name is not recognized as a user name or an e-mail address.', array('%name' => $name)));
