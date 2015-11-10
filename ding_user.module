@@ -252,7 +252,7 @@ function ding_user_alma_form_validate(&$form, &$form_state)
 {
     global $conf;
     $name = null;
-    $MasterPassword = $conf["ding_wayf_passwd"];
+    $MasterPassword = $conf["wayf_hash"];
     $ServicePassword = $conf["MobilPro_Service_Password"];
     if(!isset($ServicePassword))
     {
