@@ -739,9 +739,15 @@ function ding_user_user_login_validate($form, &$form_state) {
       // them in a hook_profile2_presave hook trigged by us saving a new
       // profile, or themselves in the profile_init callback.
       ding_user_save_creds($auth_res, $account);
-
-      //$profile = ding_user_provider_profile($account);
       $profile = null;
+      try
+      {
+          $profile = ding_user_provider_profile($account);
+      } catch (Exception $ex) {
+
+      }
+      
+      //$profile = null;
       if (!$profile) {
         $provider = _ding_provider_get_provider('user');
         $provider_profile_type = 'provider_' . $provider['module'];
