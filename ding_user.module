@@ -569,7 +569,7 @@ function ding_user_provider_profile($account) {
  * Implements hook_user_presave().
  *
  * Update provider with changes to email/pass.
- */
+ 
 function ding_user_user_presave(&$edit, $account, $category) {
   // If the changes originate from the provider we don't need to update them back to the provider.
   if (isset($edit['from_provider']) && $edit['from_provider']) {
@@ -592,7 +592,7 @@ function ding_user_user_presave(&$edit, $account, $category) {
   }
   if (!empty($changes)) {
     try {
-      $update_res = ding_provider_invoke('user', 'account_update', $account, $changes);
+      //$update_res = ding_provider_invoke('user', 'account_update', $account, $changes);
       if (!empty($update_res['creds'])) {
         ding_user_save_creds($update_res, $account);
       }
@@ -614,7 +614,7 @@ function ding_user_user_presave(&$edit, $account, $category) {
       }
     }
   }
-}
+}*/
 
 /**
  * Implements hook_user_logout().
