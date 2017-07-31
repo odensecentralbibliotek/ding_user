@@ -220,6 +220,7 @@ function ding_user_form_user_profile_form_alter(&$form, &$form_state) {
         $form['#validate'][$key] = 'ding_user_account_form_validate';
       }
     }
+     $form['#submit'][] = 'ding_user_profile_update_submit';
   }
 }
 /**
@@ -1054,4 +1055,37 @@ class DingUserCredentialsCache extends DrupalDatabaseCache {
 */
 function ding_user_get_pincode_length() {
 return 4;
+}
+/**
+ * Updates the users pin-code as part of the profile update.
+ *
+ * It's done in this submit function as the pin-code is not part of provider
+ * profile and this ensures that it never in any way get stored in the DB.
+ *
+ * Furthermore the pin-code fields are injected into the profile form in the
+ * form alter above as there is not password field available, that would not
+ * store it in the database.
+ */
+function ding_user_profile_update_submit(&$form, &$form_state) {
+  $pincode = isset($form_state['values']['pincode']) ? $form_state['values']['pincode'] : '';
+  // If pin-code is not empty, it's changed.
+  if (!empty($pincode)) {
+    global $user;
+    try {
+      $update_res = ding_provider_invoke('user', 'update_pincode', $user, $pincode);
+      if (!empty($update_res['creds'])) {
+        // Updated drupal credentials.
+          ding_user_save_creds($update_res, $user);
+        //ding_user_save_creds($update_res);
+      }
+    }
+    catch (Exception $exception) {
+      // If update_account fails, we're in trouble, as we're too far in to
+      // set form errors. So we'll just tell the user that it couldn't be, and
+      // not save the fields.
+      drupal_set_message(t("There was a problem communicating with library system. Please contact the site administrator."), 'error');
+      watchdog_exception('ding_user', $exception);
+      drupal_set_message(t("New pincode not saved."), 'error');
+    }
+  }
 }
