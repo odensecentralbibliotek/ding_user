@@ -770,27 +770,33 @@ function ding_user_user_login_validate($form, &$form_state) {
       } catch (Exception $ex) {
 
       }
-      
-      //$profile = null;
-      if (!$profile) {
-        $provider = _ding_provider_get_provider('user');
-        $provider_profile_type = 'provider_' . $provider['module'];
-        // Check that we have a profile type for this provider.
-        if (!$profile_type = profile2_type_load($provider_profile_type)) {
-          // Create new type, if provider haven't.
-          $profile_type = ding_user_create_profile_type($provider);
-        }
-        // Create a profile for current user.
-        $profile = new Profile(
-          array(
-            'user' => $account,
-            'type' => $profile_type,
-          )
-        );
-
-        // Bind this profile to the user.
-        $profile->save();
+      /*
+       * Here we changed so if the profile2 exists it is deleted
+       * this is due to the need for always reflecting the correct data
+       * directly from the FBS.
+       */       
+      if($profile != null)
+      {
+        profile2_delete($profile);
       }
+      $provider = _ding_provider_get_provider('user');
+      $provider_profile_type = 'provider_' . $provider['module'];
+      // Check that we have a profile type for this provider.
+      if (!$profile_type = profile2_type_load($provider_profile_type)) {
+       // Create new type, if provider haven't.
+       $profile_type = ding_user_create_profile_type($provider);
+      }
+      // Create a profile for current user.
+      $profile = new Profile(
+        array(
+          'user' => $account,
+          'type' => $profile_type,
+        )
+      );
+
+    // Bind this profile to the user.
+    $profile->save();
+      
 
       // Let provider initialise the profile. Assume they save it if need be.
       if (ding_provider_implements('user', 'profile_init')) {
