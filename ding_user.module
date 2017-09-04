@@ -707,7 +707,7 @@ function ding_user_user_login_validate($form, &$form_state) {
     return;
   }
 
-  try {
+  //try {
     $auth_res = ding_provider_invoke('user', 'authenticate', $form_state['values']['name'], $form_state['values']['pass']);
     if (!is_array($auth_res) || !isset($auth_res['success'])) {
       watchdog('ding_user', 'Provider returned invalid result: @res', array('@res' => print_r($auth_res, TRUE)), WATCHDOG_DEBUG);
@@ -771,32 +771,93 @@ function ding_user_user_login_validate($form, &$form_state) {
 
       }
       /*
-       * Here we changed so if the profile2 exists it is deleted
-       * this is due to the need for always reflecting the correct data
-       * directly from the FBS.
+       *If a Profile already exists , update it , instead of creating a new.
        */       
-      if($profile != null)
+      if(!$profile)
       {
-        profile2_delete($profile);
-      }
-      $provider = _ding_provider_get_provider('user');
-      $provider_profile_type = 'provider_' . $provider['module'];
-      // Check that we have a profile type for this provider.
-      if (!$profile_type = profile2_type_load($provider_profile_type)) {
-       // Create new type, if provider haven't.
-       $profile_type = ding_user_create_profile_type($provider);
-      }
-      // Create a profile for current user.
-      $profile = new Profile(
-        array(
-          'user' => $account,
-          'type' => $profile_type,
-        )
-      );
-
-    // Bind this profile to the user.
-    $profile->save();
       
+        $provider = _ding_provider_get_provider('user');
+        $provider_profile_type = 'provider_' . $provider['module'];
+        // Check that we have a profile type for this provider.
+        if (!$profile_type = profile2_type_load($provider_profile_type)) {
+         // Create new type, if provider haven't.
+         $profile_type = ding_user_create_profile_type($provider);
+        }
+        // Create a profile for current user.
+        $profile = new Profile(
+          array(
+            'user' => $account,
+            'type' => $profile_type,
+          )
+        );
+
+        // Bind this profile to the user.
+        $profile->save();
+      }
+      else
+      {
+          //Populate profile fields
+           
+          $changed = false;
+          //Update the profile fields.
+          if($profile->field_fbs_address['und'][0]['value']['city'] != $auth_res['creds']['address']['city']
+              || $profile->field_fbs_address['und'][0]['value']['country'] != $auth_res['creds']['address']['country']
+              || $profile->field_fbs_address['und'][0]['value']['postal'] != $auth_res['creds']['address']['postal']
+              || $profile->field_fbs_address['und'][0]['value']['street'] != $auth_res['creds']['address']['street'])
+          {
+              $changed = true;
+              $profile->field_fbs_address['und'][0]['value']['city'] = $auth_res['creds']['address']['city'];
+              $profile->field_fbs_address['und'][0]['value']['country'] = $auth_res['creds']['address']['country'];
+              $profile->field_fbs_address['und'][0]['value']['postal'] = $auth_res['creds']['address']['postal'];
+              $profile->field_fbs_address['und'][0]['value']['street'] = $auth_res['creds']['address']['street'];
+          }
+          
+          if($profile->field_fbs_mail['und'][0]['value'] != $auth_res['creds']['mail'])
+          {
+              $profile->field_fbs_mail['und'][0]['value'] = $auth_res['creds']['mail'];
+              $changed = true;
+          }
+          if($profile->field_fbs_mail_notification['und'][0]['value'] != $auth_res['creds']['mail_notification'])
+          {
+              $profile->field_fbs_mail_notification['und'][0]['value'] = $auth_res['creds']['mail_notification'];
+              $changed = true;
+          }
+          if($profile->field_fbs_name['und'][0]['value'] != $auth_res['creds']['name'])
+          {
+              $profile->field_fbs_name['und'][0]['value'] = $auth_res['creds']['name'];
+              $changed = true;
+          }
+          if(isset($auth_res['creds']['on_hold']))
+          {
+              if($profile->field_fbs_on_hold['und'][0]['from'] != $auth_res['creds']['ol_hold']['from'] 
+              || $profile->field_fbs_on_hold['und'][0]['to'] != $auth_res['creds']['ol_hold']['to'])
+            {
+                $profile->field_fbs_on_hold['und'][0]['from'] = $auth_res['creds']['ol_hold']['from'];
+                $profile->field_fbs_on_hold['und'][0]['to'] = $auth_res['creds']['ol_hold']['to'];
+                $changed = true;
+            }
+          }
+          if($profile->field_fbs_phone['und'][0]['value'] != $auth_res['creds']['phone'])
+          {
+              $profile->field_fbs_phone['und'][0]['value'] = $auth_res['creds']['phone'];
+              $changed = true;
+          }
+          
+          if(isset($profile->field_fbs_phone_notification) && ($profile->field_fbs_phone_notification['und'][0]['value'] != $auth_res['creds']['phone_notification']))
+          {
+              $profile->field_fbs_phone_notification['und'][0]['value'] = $auth_res['creds']['phone_notification'];
+              $changed = true;
+          }
+          if($profile->field_fbs_preferred_branch['und'][0]['value'] != $auth_res['creds']['preferred_branch'])
+          {
+              $profile->field_fbs_preferred_branch['und'][0]['value'] = $auth_res['creds']['preferred_branch'];
+              $changed = true;
+          }
+          if($changed == true)
+          {
+              profile2_save($profile);
+          }
+      }
 
       // Let provider initialise the profile. Assume they save it if need be.
       if (ding_provider_implements('user', 'profile_init')) {
@@ -826,11 +887,11 @@ function ding_user_user_login_validate($form, &$form_state) {
         }
       }
     }
-  }
-  catch (Exception $e) {
+  //}
+  /*catch (Exception $e) {
     // Exception thrown, log error and carry on.
     watchdog('ding_user', 'Provider exception, message: @message', array('@message' => $e->getMessage()), WATCHDOG_ERROR);
-  }
+  }*/
 }
 
 /**
