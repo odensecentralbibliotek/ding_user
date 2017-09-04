@@ -829,11 +829,11 @@ function ding_user_user_login_validate($form, &$form_state) {
           }
           if(isset($auth_res['creds']['on_hold']))
           {
-              if($profile->field_fbs_on_hold['und'][0]['from'] != $auth_res['creds']['ol_hold']['from'] 
-              || $profile->field_fbs_on_hold['und'][0]['to'] != $auth_res['creds']['ol_hold']['to'])
+              if($profile->field_fbs_on_hold['und'][0]['from'] != $auth_res['creds']['on_hold']['from'] 
+              || $profile->field_fbs_on_hold['und'][0]['to'] != $auth_res['creds']['on_hold']['to'])
             {
-                $profile->field_fbs_on_hold['und'][0]['from'] = $auth_res['creds']['ol_hold']['from'];
-                $profile->field_fbs_on_hold['und'][0]['to'] = $auth_res['creds']['ol_hold']['to'];
+                $profile->field_fbs_on_hold['und'][0]['from'] = $auth_res['creds']['on_hold']['from'];
+                $profile->field_fbs_on_hold['und'][0]['to'] = $auth_res['creds']['on_hold']['to'];
                 $changed = true;
             }
           }
