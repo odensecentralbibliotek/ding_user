@@ -296,7 +296,7 @@ function ding_user_alma_form_validate(&$form, &$form_state)
      * Users might not always have an email account connected to their user. althou this should
      * be the normal case , we cant assume it.
      */
-    if (!is_array($auth_res) || !isset($auth_res['success'])) {
+    if (!is_array($auth_res) || !isset($auth_res['success'] && $auth_res[success] == false )) {
         watchdog('ding_user', 'Provider returned invalid result: @res', array('@res' => print_r($auth_res, TRUE)), WATCHDOG_DEBUG);
         form_set_error('name', t('Sorry, %name is not recognized as a user name or an e-mail address.', array('%name' => $name)));
         return;
@@ -380,6 +380,7 @@ function ding_user_alma_form_validate(&$form, &$form_state)
     }
     else {
       form_set_error('name', t('Sorry, %name is not recognized as a user name or an e-mail address.', array('%name' => $name)));
+      return;
     }
 }
 function ding_user_pass_alma_login($Username,$Password)
