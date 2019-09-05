@@ -675,7 +675,7 @@ function ding_user_default_authname($name) {
  * Handles authentication with provider, and setting up a profile2 for the
  * user/provider.
  */
-function ding_user_user_login_validate($form, &$form_state) {
+function ding_user_user_login_validate(&$form, &$form_state) {
   // If $form_state['uid'] is set and has a true value, Drupal already found a
   // user, so we don't bother. Also, we require name and pass.
   if (isset($form_state['uid']) && $form_state['uid'] || empty($form_state['values']['name']) || empty($form_state['values']['pass'])) {
@@ -841,6 +841,23 @@ function ding_user_user_login_validate($form, &$form_state) {
 
       // Log user in.
       $form_state['uid'] = $account->uid;
+      
+      /*
+       * Alter the redirect to user page if not other valid location 
+       * in destination
+       */
+      if(strpos($_GET['destination'], 'search/') !== false)
+      {
+          //preserve facets ?
+      }
+      else
+      {
+          unset($_GET['destination']);
+          $form_state['redirect'] = "user/" . $account->uid;
+      }
+     
+      
+      
       // We're not calling user_login_submit like user_external_login_register
       // does, it's already the submit handler.
 
