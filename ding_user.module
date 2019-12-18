@@ -847,7 +847,7 @@ function ding_user_user_login_validate(&$form, &$form_state) {
        * Alter the redirect to user page if not other valid location 
        * in destination
        */
-      if(strpos($_GET['destination'], 'search/') !== false || strpos($_GET['destination'], 'ting/infomedia') !== false)
+      if(strpos($_GET['destination'], 'ting/') !== false || strpos($_GET['destination'], 'ting/infomedia') !== false)
       {
           //preserve facets ?
       }
